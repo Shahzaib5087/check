@@ -1,0 +1,56 @@
+import netmiko
+import difflib
+print("Initiating Loopback...")
+session = netmiko.ConnectHandler(**connectionInfo) #defineconnection
+session.enable()
+conf_Command=[
+    'int loopback 1',
+    'ip add 127.0.0.1 255.255.255.0',
+    'description TEST LOOPBACK'
+]
+loopbackConf=session.send_config_set(conf_Command)
+conf_Command=[
+    'router eigrp 20',
+    'network 10.0.0.0 0.0.0.255',
+    'network 192.168.1.244 0.0.0.3',
+    'network 192.168.1.0 0.0.0.3'
+]
+print("Configuring EIGRP")
+eigrpConf=session.send_config_set(conf_Command)
+print("Configuring VLAN")
+conf_Command=[
+    'vlan 10',
+    'name vlan1'
+    'interface Ethernet 0/0'
+    'switchport mode access'
+    'switchport access vlan 10'
+    'exit'
+]
+vlanConf=session.send_config_set(conf_Command)
+session.close()
+connectionInfo = {
+    "device_type":"cisco_ios_telent",
+    "host":"192.168.56.101",
+    "username":"cisco",                                     #Do you want to configure vlan or do you want to configure device?
+    "password":"cisco",
+    "secret":"class"
+    }
+print("Connecting to device 1")
+session = netmiko.ConnectHandler(**connectionInfo)
+session.enable()
+print("Uploading Config from file to device 1")
+sendConf=session.send_config_from_file("runningconfig.txt")
+session.close()
+print("Connecting to device 2")
+connectionInfo = {
+    "device_type":"cisco_ios_telent",
+    "host":"192.168.56.102",
+    "username":"cisco",
+    "password":"cisco",
+    "secret":"class"
+    }
+session = netmiko.ConnectHandler(**connectionInfo)
+session.enable()
+print("Uploading Config from file to device 2")
+sendConf=session.send_config_from_file("runningconfig.txt")
+session.close()
